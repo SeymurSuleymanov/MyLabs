@@ -5,7 +5,7 @@ interface User {
     isActive: boolean;
 }
 
-function createUser(id: number, name: string, email: string, isActive: boolean = true) : User {
+export function createUser(id: number, name: string, email: string, isActive: boolean = true) : User {
     return {
         id, name, email, isActive
     };
@@ -144,4 +144,3 @@ const persons: Person[] = [
 const results = findById(persons, 2);
 
 console.log(results);
-
