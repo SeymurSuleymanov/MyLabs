@@ -1,3 +1,6 @@
+import { listenerCount } from 'node:cluster';
+import { readFile, writeFile } from 'node:fs/promises';
+
 export function csvToJSON(input: string[], delimiter: string): Record<string, string>[] {
     if (!input || input.length === 0) {
         throw new Error("Array can be empty!");
@@ -50,3 +53,21 @@ export function csvToJSON(input: string[], delimiter: string): Record<string, st
 
 let res = csvToJSON(["p1;p2;p3;p4", "1;A;b;c", "2;B;v;d"], ';'); 
 console.log(res);
+
+export async function  formatCSVFileToJSONFile(input: string, output: string,
+delimiter: string): Promise<void> {
+    try {
+        const filecontent = await readFile(input, 'utf-8');
+        const stroki = filecontent.split('\n').filter(x=>x.trim() !=='');
+        if (stroki.length===0) {
+            throw new Error('File is empty');
+        }
+
+        const jsonDate  = csvToJSON(stroki, delimiter);
+
+        await writeFile(output, JSON.stringify(jsonDate, null, 2), 'utf-8');
+    }
+    catch {
+        throw new Error("Error process file");
+    }
+}
