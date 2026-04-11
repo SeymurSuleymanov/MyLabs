@@ -30,9 +30,10 @@ function App() {
           const thumbnailUrl = googleData.items?.[0]?.volumeInfo?.imageLinks?.thumbnail;
           
           if (thumbnailUrl) {
-            const imgResponse = await fetch(thumbnailUrl);
-            const blob = await imgResponse.blob();
-            booksData[i].imageBlob = blob;
+              const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+              const imgResponse = await fetch(proxyUrl + thumbnailUrl);
+              const blob = await imgResponse.blob();
+              booksData[i].imageBlob = blob;
           }
         }
       }
