@@ -12,6 +12,7 @@ import BookCard from "./BookCard";
 
 // // ШАГ 4: Когда картинка не нужна — удаляем (чтобы не засорять память)
 // URL.revokeObjectURL(imageUrl);
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 function App() {
   const [book, setBook] = useState([]);
@@ -35,6 +36,7 @@ function App() {
               const blob = await imgResponse.blob();
               booksData[i].imageBlob = blob;
           }
+          await delay(500);
         }
       }
 
