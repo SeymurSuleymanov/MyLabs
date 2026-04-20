@@ -36,7 +36,7 @@ function App() {
               const blob = await imgResponse.blob();
               booksData[i].imageBlob = blob;
           }
-          await delay(500);
+          await delay(400);
         }
       }
 
