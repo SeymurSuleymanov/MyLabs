@@ -3,6 +3,8 @@ import DayAndWeek from "./components/DayOfWeek";
 import CityWeatherToday from "./components/CityWeather"
 import WeatherForFive from "./components/Weather_Five"
 import Humid from "./components/Humid"
+import FutureDays from "./components/FutureDay"
+
 const TOKEN_API = "c60df21b68b58bf755c7cf4825bb824e";
 
 function App() {
@@ -11,7 +13,7 @@ function App() {
   const [weatherData, setWeatherData] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  const example_cty = "Moscow";
+  const example_cty = "Barnaul";
 
   useEffect(() => {
     async function getWeather() {
@@ -46,6 +48,7 @@ function App() {
         <CityWeatherToday data ={weatherData} />
         <WeatherForFive data = {weatherData} />
         <Humid data = {weatherData} />
+        <FutureDays data = {weatherData} />
     </div>
   );
 }
