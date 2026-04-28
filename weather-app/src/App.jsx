@@ -5,18 +5,36 @@ import WeatherForFive from "./components/Weather_Five"
 import Humid from "./components/Humid"
 import FutureDays from "./components/FutureDay"
 
+//мок
+import mockWeatherData from './mockWeather.js';
+
+import './App.css';
+
 const TOKEN_API = "c60df21b68b58bf755c7cf4825bb824e";
 
 function App() {
+  //мок
+  const USE_MOCK = true;
+
   const [city, setCity] = useState("");
   const [coordinates, setCoordinates] = useState(null);
   const [weatherData, setWeatherData] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  const example_cty = "Barnaul";
+  const example_cty = "London";
 
   useEffect(() => {
     async function getWeather() {
+      //мок
+      setLoading(true);
+      
+      if (USE_MOCK) {
+          setWeatherData(mockWeatherData);
+          setLoading(false);
+          return; 
+      }
+
+
       const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${example_cty}&limit=1&appid=${TOKEN_API}`;
       const geoResponse = await fetch(geoUrl);
       const geoData = await geoResponse.json();
@@ -30,6 +48,7 @@ function App() {
       const cityUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${geoData[0].lat}&lon=${geoData[0].lon}&units=metric&appid=${TOKEN_API}`;
       const cityRespone = await fetch(cityUrl);
       const cityData = await cityRespone.json();
+
     if (cityData && cityData.cod == "200") {
       setWeatherData(cityData);
     }

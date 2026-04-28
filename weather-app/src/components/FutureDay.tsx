@@ -6,10 +6,14 @@ function FutureDays({ data }) {
         const dayItems = data.list.slice(i, i + 8);
         
         const temps = dayItems.map(item => item.main.temp);
-
         const minTemp = Math.min(...temps);
         const maxTemp = Math.max(...temps);
-
+        const maxTempItem = dayItems.reduce((max, item) => 
+            item.main.temp > max.main.temp ? item : max, dayItems[0]
+        );
+        const iconCode = maxTempItem.weather[0].icon;
+        const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+        
         const dateObject = new Date(dayItems[0].dt_txt);
         const dayName = daysArray[dateObject.getDay()];
         const dayMonth = dateObject.getDate();
@@ -21,6 +25,7 @@ function FutureDays({ data }) {
             <div key={i} className="future-card">
                 <div>{dayName}, {dayMonth}</div>
                 <div>{maxSign}{Math.round(maxTemp)}° / {minSign}{Math.round(minTemp)}°</div>
+                <img src={iconUrl} alt="weather-icon" />
             </div>
         );
     }
