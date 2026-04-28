@@ -1,6 +1,6 @@
 function WeatherForFive({ data }) {
-    
     const fiveHours = data.list.slice(0, 5);
+    const timezoneOffset = data.city.timezone; // смещение в секундах
     
     return (
         <div className="forecast">
@@ -8,17 +8,21 @@ function WeatherForFive({ data }) {
                 {fiveHours.map((item, index) => {
                     const temp = Math.round(item.main.temp);
                     const sign = temp > 0 ? "+" : "";
-                    const date = new Date(item.dt_txt);
-                    const hours = date.getHours();
-                    const timeLabel = index === 0 ? "Now" : `${hours}:00`;
-                    const ar_url = item.weather[0].icon;
                     
-                    const icon_url = `https://openweathermap.org/img/wn/${ar_url}@2x.png`;
+                    // Конвертируем UTC в местное время
+                    const utcDate = new Date(item.dt_txt);
+                    const localDate = new Date(utcDate.getTime() + timezoneOffset * 1000);
+                    const hours = localDate.getUTCHours(); // теперь правильно
+                    
+                    const timeLabel = index === 0 ? "Now" : `${hours}:00`;
+                    const iconCode = item.weather[0].icon;
+                    const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+                    
                     return (
                         <div key={index} className="forecast-card">
                             <div className="time">{timeLabel}</div>
                             <div className="temp">{sign}{temp}°C</div>
-                            <div className="picture"><img src={icon_url} alt="Weather 5 days"/></div>
+                            <img src={iconUrl} alt="Weather icon" />
                         </div>
                     );
                 })}
@@ -26,5 +30,4 @@ function WeatherForFive({ data }) {
         </div>
     );
 }
-
 export default WeatherForFive;

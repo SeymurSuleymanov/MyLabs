@@ -1,10 +1,20 @@
-/* Подключаем шрифт, похожий на тот, что на макете (например, Montserrat или Varela Round) */
 @import url('https://fonts.googleapis.com/css2?family=Varela+Round&display=swap');
 
 :root {
-  --bg-blue: #4a76fd; /* Основной синий фон */
-  --card-blue: #7394ff; /* Светло-синий фон карточки с прогнозом */
+  --bg-color: #4a76fd;
+  --card-color: #7394ff;
   --text-white: #ffffff;
+  --transition-speed: 0.5s;
+}
+
+body.night {
+  --bg-color: #000935; 
+  --card-color: #2b345a; 
+}
+
+body.day {
+  --bg-color: #4a76fd;
+  --card-color: #7394ff;
 }
 
 body {
@@ -16,11 +26,12 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+
 }
 
 .app {
-  background-color: var(--bg-blue);
-  width: 320px; /* Ширина стандартного мобильного экрана */
+  background-color: var(--bg-color);
+  width: 320px; 
   border-radius: 40px;
   padding: 30px 20px;
   color: var(--text-white);
@@ -28,7 +39,6 @@ body {
   text-align: center;
 }
 
-/* --- Заголовок (Дата) --- */
 .Week_day h1 {
   font-size: 18px;
   font-weight: 400;
@@ -36,10 +46,11 @@ body {
   margin-bottom: 20px;
 }
 
-/* --- Главная погода сегодня --- */
 .city_temp {
   position: relative;
   margin-bottom: 30px;
+  text-align: left;
+  color: gainsboro;
 }
 
 .city_temp h1 {
@@ -62,7 +73,7 @@ body {
   filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
 }
 
-/* --- Почасовой прогноз --- */
+
 .forecast {
   margin-bottom: 30px;
 }
@@ -93,7 +104,6 @@ body {
   width: 40px;
 }
 
-/* --- Детали (Влажность, Ветер и т.д.) --- */
 .weather-details {
   display: flex;
   justify-content: space-between;
@@ -117,11 +127,11 @@ body {
   font-size: 14px;
 }
 
-/* --- Прогноз на неделю (Нижняя карточка) --- */
 .future_days {
-  background-color: var(--card-blue);
+  background-color: var(--card-color);
   border-radius: 30px;
   padding: 20px;
+  width: 280px;
 }
 
 .future-card {
