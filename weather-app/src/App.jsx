@@ -23,7 +23,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   
   
-  const example_cty = "Moscow";
+  const example_cty = "Черепаново ";
 
   useEffect(() => {
     async function getWeather() {
