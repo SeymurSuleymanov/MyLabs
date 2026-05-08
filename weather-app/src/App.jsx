@@ -22,8 +22,8 @@ function App() {
   const [weatherData, setWeatherData] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  
-  const example_cty = "Черепаново ";
+  // срок сдачи последний до: 25 - 31 
+  const example_cty = "Москва";
 
   useEffect(() => {
     async function getWeather() {
@@ -44,7 +44,6 @@ function App() {
       setCoordinates({ 
         lat: geoData[0].lat,
         lon: geoData[0].lon
-  
       });
       const cityUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${geoData[0].lat}&lon=${geoData[0].lon}&units=metric&appid=${TOKEN_API}`;
       const cityRespone = await fetch(cityUrl);

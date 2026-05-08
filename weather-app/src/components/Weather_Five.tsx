@@ -1,6 +1,6 @@
 function WeatherForFive({ data }) {
     const fiveHours = data.list.slice(0, 5);
-    const timezoneOffset = data.city.timezone; // смещение в секундах
+    const timezoneOffset = data.city.timezone; 
     
     return (
         <div className="forecast">
@@ -9,10 +9,9 @@ function WeatherForFive({ data }) {
                     const temp = Math.round(item.main.temp);
                     const sign = temp > 0 ? "+" : "";
                     
-                    // Конвертируем UTC в местное время
                     const utcDate = new Date(item.dt_txt);
                     const localDate = new Date(utcDate.getTime() + timezoneOffset * 1000);
-                    const hours = localDate.getUTCHours(); // теперь правильно
+                    const hours = localDate.getUTCHours(); 
                     
                     const timeLabel = index === 0 ? "Now" : `${hours}:00`;
                     const iconCode = item.weather[0].icon;
