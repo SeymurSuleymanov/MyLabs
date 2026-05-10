@@ -31,19 +31,95 @@ function getColumnLetter(colIndex: number): string {
     return result;
 }
 
-//функция для формул
-
-function computeValue(raw: string): CellValue {
+//парсер колонок A-Z и далее
+function parseColumn(colStr: string): number {
+    let result = 0;
+    for (let i = 0; i < colStr.length; i++) {
+        result = result * 26 + (colStr.charCodeAt(i) - 64);
+    }
+    return result - 1; 
+}
+//функция формул
+function computeValue(raw: string, table: Cell[][]): CellValue {
     raw = raw.trim();
-    if (raw.startsWith("=")) {
-        return "?";
+    
+    if (!raw.startsWith("=")) {
+        if (!isNaN(Number(raw))) return Number(raw);
+        if (raw === "true") return true;
+        if (raw === "false") return false;
+        return raw;
     }
-    if (!isNaN(Number(raw))) {
-        return Number(raw);
+    
+    const f = raw.slice(1).trim();
+
+    if (f.startsWith("SUM(") && f.endsWith(")")) {
+        const range = f.slice(4, -1);
+        const [start, end] = range.split(":");
+        
+        const startMatch = start.match(/[A-Z]+|\d+/g);
+        const endMatch = end.match(/[A-Z]+|\d+/g);
+        
+        if (!startMatch || !endMatch) return "Ошибка";
+        
+        const startCol = parseColumn(startMatch[0]);
+        const startRow = parseInt(startMatch[1]) - 1;
+        const endCol = parseColumn(endMatch[0]);
+        const endRow = parseInt(endMatch[1]) - 1;
+        
+        let sum = 0;
+        for (let r = Math.min(startRow, endRow); r <= Math.max(startRow, endRow); r++) {
+            for (let c = Math.min(startCol, endCol); c <= Math.max(startCol, endCol); c++) {
+                const val = table[r]?.[c]?.computed;
+                if (typeof val === "number") sum += val;
+            }
+        }
+        return sum;
     }
-    if (raw === "true") return true;
-    if (raw === "false") return false;
-    return raw;
+
+    if (f.startsWith("AVERAGE(") && f.endsWith(")")) {
+        const range = f.slice(8, -1);
+        const [start, end] = range.split(":");
+        
+        const startMatch = start.match(/[A-Z]+|\d+/g);
+        const endMatch = end.match(/[A-Z]+|\d+/g);
+        
+        if (!startMatch || !endMatch) return "Ошибка";
+        
+        const startCol = parseColumn(startMatch[0]);
+        const startRow = parseInt(startMatch[1]) - 1;
+        const endCol = parseColumn(endMatch[0]);
+        const endRow = parseInt(endMatch[1]) - 1;
+        
+        let sum = 0, count = 0;
+        for (let r = Math.min(startRow, endRow); r <= Math.max(startRow, endRow); r++) {
+            for (let c = Math.min(startCol, endCol); c <= Math.max(startCol, endCol); c++) {
+                const val = table[r]?.[c]?.computed;
+                if (typeof val === "number") { sum += val; count++; }
+            }
+        }
+        return count > 0 ? sum / count : "Ошибка";
+    }
+
+    // 3. A1+B1, A1*2, 10-5
+    if (/[+\-*/]/.test(f) && !f.includes("(")) {
+        try {
+            let expr = f;
+            expr = expr.replace(/[A-Z]+\d+/g, (ref) => {
+                const match = ref.match(/[A-Z]+|\d+/g);
+                if (!match) return "0";
+                const col = parseColumn(match[0]);
+                const row = parseInt(match[1]) - 1;
+                const val = table[row]?.[col]?.computed;
+                return typeof val === "number" ? String(val) : "0";
+            });
+            const result = eval(expr);
+            return typeof result === "number" ? result : "Ошибка";
+        } catch {
+            return "Ошибка";
+        }
+    }
+    
+    return "?";
 }
 
 //функция для логики выделения ячеек через shift
@@ -81,7 +157,7 @@ function Table() {
         if (!editing) return;
         const newTable = [...table];
         const rawValue = editValue;
-        const computedValue = computeValue(rawValue);
+        const computedValue = computeValue(rawValue, table);
         
         newTable[editing.row][editing.col] = { raw: rawValue, computed: computedValue };
         setTable(newTable);
