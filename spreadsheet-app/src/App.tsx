@@ -3,7 +3,10 @@ import Table from "./components/Table";
 function App() {
 
   return (
-    <Table />
+    <div>
+      Start project
+      <Table />
+    </div>
   )
 }
 export default App;
