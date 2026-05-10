@@ -1,13 +1,20 @@
 import { useState } from "react";
 import "./Table.css";
 
+type CellValue = string | number | boolean;
+
+interface Cell {
+    raw: string;
+    computed: CellValue;
+}
+
 //создание таблицы
 function createTable(row: number, col: number) {
-    const arr: string[][] = [];
+    const arr: Cell[][] = [];
     for (let i = 0; i < row; i++) {
         arr[i] = [];
         for (let j = 0; j < col; j++) {
-            arr[i][j] = " ";
+            arr[i][j] = { raw: " ", computed: " " };
         }
     }
     return arr;
@@ -24,8 +31,22 @@ function getColumnLetter(colIndex: number): string {
     return result;
 }
 
-//функция для логики выделения ячеек через shift
+//функция для формул
 
+function computeValue(raw: string): CellValue {
+    raw = raw.trim();
+    if (raw.startsWith("=")) {
+        return "?";
+    }
+    if (!isNaN(Number(raw))) {
+        return Number(raw);
+    }
+    if (raw === "true") return true;
+    if (raw === "false") return false;
+    return raw;
+}
+
+//функция для логики выделения ячеек через shift
 function isRange(cell, range) {
     if (!range) return false;
 
@@ -44,7 +65,7 @@ function isRange(cell, range) {
 
 //основная функц-ия
 function Table() {
-    const [table, setTable] = useState(createTable(26, 100));
+    const [table, setTable] = useState<Cell[][]>(createTable(26, 30));
     const [select, setSelect] = useState(null);
     const [editing, setEditing] = useState(null);
     const [editValue, setEditValue] = useState("");
@@ -58,9 +79,12 @@ function Table() {
 
     const saveEdit = () => {
         if (!editing) return;
-        const newData = [...table];
-        newData[editing.row][editing.col] = editValue;
-        setTable(newData);
+        const newTable = [...table];
+        const rawValue = editValue;
+        const computedValue = computeValue(rawValue);
+        
+        newTable[editing.row][editing.col] = { raw: rawValue, computed: computedValue };
+        setTable(newTable);
         setEditing(null);
     };
 
@@ -119,14 +143,19 @@ function Table() {
                                     setRange(null);
                                 }
                             }}
-                            onDoubleClick={() => startEdit(rowIndex, colIndex, table[rowIndex][colIndex])}
+                            onDoubleClick={() => startEdit(rowIndex, colIndex, table[rowIndex][colIndex].raw)}
+                            onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                startEdit(rowIndex, colIndex, table[rowIndex][colIndex].raw);
+                                }
+                            }}
                             key={`${rowIndex}-${colIndex}`} 
                             className={`cell-button ${
                                 select === `${rowIndex}-${colIndex}` || isRange(`${rowIndex}-${colIndex}`, range) 
                                     ? "select" 
                                     : ""
                             }`}>
-                            {table[rowIndex][colIndex]}
+                            {table[rowIndex][colIndex].computed}
                         </button>
                     );
                 })}
