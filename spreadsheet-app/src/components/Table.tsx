@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./Table.css";
 
 type CellValue = string | number | boolean;
@@ -148,6 +148,49 @@ function Table() {
     const [lastCell, setLastCell] = useState(null);
     const [range, setRange] = useState(null);
 
+    const [activeCell, setActiveCell] = useState(null);
+
+    const [menuPosition, setMenuPosition] = useState(null);
+    const [menuCell, setMenuCell] = useState(null);
+
+    useEffect(() => {
+        const handleClick = () => setMenuPosition(null);
+        document.addEventListener('click', handleClick);
+        return () => document.removeEventListener('click', handleClick);
+    }, []);
+    //функ-ции для работы добавления, удаления row col
+
+    const addRow = (index) => {
+        const newTable = [...table];
+        const newRow = Array(table[0].length).fill({ raw: " ", computed: " " });
+        newTable.splice(index, 0, newRow);
+        setTable(newTable);
+    };
+
+    const deleteRow = (index) => {
+        const newTable = [...table];
+        newTable.splice(index, 1);
+        setTable(newTable);
+    };
+
+    const addColumn = (index) => {
+        const newTable = table.map(row => {
+            const newRow = [...row];
+            newRow.splice(index, 0, { raw: " ", computed: " " });
+            return newRow;
+        });
+        setTable(newTable);
+    };
+
+    const deleteColumn = (index) => {
+        const newTable = table.map(row => {
+            const newRow = [...row];
+            newRow.splice(index, 1);
+            return newRow;
+        });
+        setTable(newTable);
+    };
+
     const startEdit = (row, col, currentValue) => {
         setEditing({ row, col });
         setEditValue(currentValue);
@@ -174,7 +217,21 @@ function Table() {
         rowHeaders.push((i + 1).toString());
     }
 
-    return (
+return (
+    <>
+        <input 
+            value={activeCell ? table[activeCell.split("-")[0]]?.[activeCell.split("-")[1]]?.raw : ""}
+            onChange={(e) => {
+                if (!activeCell) return;
+                const [row, col] = activeCell.split("-").map(Number);
+                const newTable = [...table];
+                newTable[row][col] = { raw: e.target.value, computed: computeValue(e.target.value, table) };
+                setTable(newTable);
+            }}
+            placeholder="Введите формулу..."
+            className="formula-bar"
+        />
+        
         <div className="table-wrapper">      
             <div className="table-container">
                 <div className="table-row">
@@ -188,57 +245,77 @@ function Table() {
                     <div key={rowIndex} className="table-row">
                         <div className="row-header">{rowHeaders[rowIndex]}</div>
                         
-                {row.map((cell, colIndex) => {
-                    const isEditing = editing?.row === rowIndex && editing?.col === colIndex;
-                    //редактирование
-                    if (isEditing) {
-                        return (
-                            <input
-                                key={`${rowIndex}-${colIndex}`}
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                onBlur={saveEdit}
-                                onKeyDown={(e) => e.key === "Enter" && saveEdit()}
-                                autoFocus
-                                className="cell-input"
-                            />
-                        );
-                    }
-                    //вывод
-                    return (
-                        <button 
-                            onClick={(e) => {
-                                const current = `${rowIndex}-${colIndex}`;
-                                
-                                if (e.shiftKey && lastCell) {
-                                    setRange({ start: lastCell, end: current });
-                                    setSelect(current);
-                                } else {
-                                    setSelect(current);
-                                    setLastCell(current);
-                                    setRange(null);
-                                }
-                            }}
-                            onDoubleClick={() => startEdit(rowIndex, colIndex, table[rowIndex][colIndex].raw)}
-                            onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                                startEdit(rowIndex, colIndex, table[rowIndex][colIndex].raw);
-                                }
-                            }}
-                            key={`${rowIndex}-${colIndex}`} 
-                            className={`cell-button ${
-                                select === `${rowIndex}-${colIndex}` || isRange(`${rowIndex}-${colIndex}`, range) 
-                                    ? "select" 
-                                    : ""
-                            }`}>
-                            {table[rowIndex][colIndex].computed}
-                        </button>
-                    );
-                })}
+                        {row.map((cell, colIndex) => {
+                            const isEditing = editing?.row === rowIndex && editing?.col === colIndex;
+                            
+                            if (isEditing) {
+                                return (
+                                    <input
+                                        key={`${rowIndex}-${colIndex}`}
+                                        value={editValue}
+                                        onChange={(e) => setEditValue(e.target.value)}
+                                        onBlur={saveEdit}
+                                        onKeyDown={(e) => e.key === "Enter" && saveEdit()}
+                                        autoFocus
+                                        className="cell-input"
+                                    />
+                                );
+                            }
+                            
+                            return (
+                                <button 
+                                    onContextMenu={(e) => {
+                                        e.preventDefault();
+                                        setMenuCell({ row: rowIndex, col: colIndex });
+                                        setMenuPosition({ x: e.clientX, y: e.clientY });
+                                    }}
+                                    onClick={(e) => {
+                                        const current = `${rowIndex}-${colIndex}`;
+                                        setActiveCell(current);
+                                        if (e.shiftKey && lastCell) {
+                                            setRange({ start: lastCell, end: current });
+                                            setSelect(current);
+                                        } else {
+                                            setSelect(current);
+                                            setLastCell(current);
+                                            setRange(null);
+                                        }
+                                    }}
+                                    onDoubleClick={() => startEdit(rowIndex, colIndex, table[rowIndex][colIndex].raw)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            startEdit(rowIndex, colIndex, table[rowIndex][colIndex].raw);
+                                        }
+                                    }}
+                                    key={`${rowIndex}-${colIndex}`} 
+                                    className={`cell-button ${
+                                        select === `${rowIndex}-${colIndex}` || isRange(`${rowIndex}-${colIndex}`, range) 
+                                            ? "select" 
+                                            : ""
+                                    }`}>
+                                    {table[rowIndex][colIndex].computed}
+                                </button>
+                            );
+                        })}
                     </div>
                 ))}
             </div>
         </div>
-    )
+        {menuPosition && (
+            <div 
+                style={{
+                    position: 'fixed',
+                    top: menuPosition.y,
+                    left: menuPosition.x
+                }}
+            >
+                <button onClick={() => { addRow(menuCell.row); setMenuPosition(null); }}>Добавить строку</button>
+                <button onClick={() => { deleteRow(menuCell.row); setMenuPosition(null); }}>Удалить строку</button>
+                <button onClick={() => { addColumn(menuCell.col); setMenuPosition(null); }}>Добавить столбец</button>
+                <button onClick={() => { deleteColumn(menuCell.col); setMenuPosition(null); }}>Удалить столбец</button>
+            </div>
+        )}
+    </>
+);
 }
 export default Table;

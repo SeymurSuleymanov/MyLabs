@@ -80,3 +80,11 @@
     box-sizing: border-box;
     background-color: white;
 }
+
+.formula-bar {
+    width: 5000%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    font-family: monospace;
+}
