@@ -139,9 +139,55 @@ function isRange(cell, range) {
     return r >= minRow && r <= maxRow && c >= minCol && c <= maxCol;
 };
 
+function Resizer({ width, onResize }) {
+    return (
+        <div
+            onMouseDown={(e) => {
+                e.preventDefault();
+                const startX = e.clientX;
+                const startW = width;
+                const move = (m) => {
+                    const newW = startW + (m.clientX - startX);
+                    if (newW > 40) onResize(newW);
+                };
+                const up = () => {
+                    document.removeEventListener('mousemove', move);
+                    document.removeEventListener('mouseup', up);
+                };
+                document.addEventListener('mousemove', move);
+                document.addEventListener('mouseup', up);
+            }}
+            style={{ position: 'absolute', right: -3, top: 0, width: 6, height: '100%', cursor: 'col-resize', background: 'transparent' }}
+        />
+    );
+}
+
+function ResizerRow({ height, onResize }) {
+    return (
+        <div
+            onMouseDown={(e) => {
+                e.preventDefault();
+                const startY = e.clientY;
+                const startH = height;
+                const move = (m) => {
+                    const newH = startH + (m.clientY - startY);
+                    if (newH > 25) onResize(newH);
+                };
+                const up = () => {
+                    document.removeEventListener('mousemove', move);
+                    document.removeEventListener('mouseup', up);
+                };
+                document.addEventListener('mousemove', move);
+                document.addEventListener('mouseup', up);
+            }}
+            style={{ position: 'absolute', bottom: -3, left: 0, width: '100%', height: 6, cursor: 'row-resize', background: 'transparent' }}
+        />
+    );
+}
+
 //основная функц-ия
 function Table() {
-    const [table, setTable] = useState<Cell[][]>(createTable(26, 30));
+    const [table, setTable] = useState<Cell[][]>(createTable(26, 100));
     const [select, setSelect] = useState(null);
     const [editing, setEditing] = useState(null);
     const [editValue, setEditValue] = useState("");
@@ -152,6 +198,9 @@ function Table() {
 
     const [menuPosition, setMenuPosition] = useState(null);
     const [menuCell, setMenuCell] = useState(null);
+
+    const [colWidths, setColWidths] = useState(Array(table[0].length).fill(80));
+    const [rowHeights, setRowHeights] = useState(Array(table.length).fill(40));
 
     useEffect(() => {
         const handleClick = () => setMenuPosition(null);
@@ -237,13 +286,27 @@ return (
                 <div className="table-row">
                     <div className="corner-cell"></div>
                     {columnHeaders.map((letter, i) => (
-                        <div key={`col-${i}`} className="column-header">{letter}</div>
+                    <div key={`col-${i}`} className="column-header" style={{ width: colWidths[i], position: 'relative' }}>
+                        {letter}
+                        <Resizer width={colWidths[i]} onResize={(w) => {
+                            const copy = [...colWidths];
+                            copy[i] = w;
+                            setColWidths(copy);
+                        }} />
+                    </div>
                     ))}
                 </div>
 
                 {table.map((row, rowIndex) => ( 
                     <div key={rowIndex} className="table-row">
-                        <div className="row-header">{rowHeaders[rowIndex]}</div>
+                        <div className="row-header" style={{ height: rowHeights[rowIndex], position: 'relative' }}>
+                            {rowHeaders[rowIndex]}
+                            <ResizerRow height={rowHeights[rowIndex]} onResize={(h) => {
+                                const copy = [...rowHeights];
+                                copy[rowIndex] = h;
+                                setRowHeights(copy);
+                            }} />
+                        </div>
                         
                         {row.map((cell, colIndex) => {
                             const isEditing = editing?.row === rowIndex && editing?.col === colIndex;
@@ -264,6 +327,8 @@ return (
                             
                             return (
                                 <button 
+                                
+                                    style={{ width: colWidths[colIndex] }}
                                     onContextMenu={(e) => {
                                         e.preventDefault();
                                         setMenuCell({ row: rowIndex, col: colIndex });
