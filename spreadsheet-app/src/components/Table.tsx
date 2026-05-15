@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import "./Table.css";
+import { updateDocument, getDocument } from './storage';
 
 type CellValue = string | number | boolean;
 
@@ -139,6 +140,7 @@ function isRange(cell, range) {
     return r >= minRow && r <= maxRow && c >= minCol && c <= maxCol;
 };
 
+//измнение движении столбцов
 function Resizer({ width, onResize }) {
     return (
         <div
@@ -162,6 +164,8 @@ function Resizer({ width, onResize }) {
     );
 }
 
+
+//измененние передвежение строк
 function ResizerRow({ height, onResize }) {
     return (
         <div
@@ -186,8 +190,9 @@ function ResizerRow({ height, onResize }) {
 }
 
 //основная функц-ия
-function Table() {
-    const [table, setTable] = useState<Cell[][]>(createTable(26, 100));
+function Table({ documentId, onBack }) {
+
+    const [table, setTable] = useState<Cell[][]>(() => createTable(26, 100));
     const [select, setSelect] = useState(null);
     const [editing, setEditing] = useState(null);
     const [editValue, setEditValue] = useState("");
@@ -201,12 +206,63 @@ function Table() {
 
     const [colWidths, setColWidths] = useState(Array(table[0].length).fill(80));
     const [rowHeights, setRowHeights] = useState(Array(table.length).fill(40));
+    const [saveStatus, setSaveStatus] = useState('saved');
 
     useEffect(() => {
         const handleClick = () => setMenuPosition(null);
         document.addEventListener('click', handleClick);
         return () => document.removeEventListener('click', handleClick);
     }, []);
+
+    //предупреждение при несохранении
+    useEffect(() => {
+    const handleBeforeUnload = (e) => {
+        if (saveStatus === 'saving') {
+            e.preventDefault();
+            e.returnValue = 'Есть несохранённые изменения';
+        }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [saveStatus]);
+
+    // load documents change id 
+    useEffect(() => {
+        const doc = getDocument(documentId)
+        if (doc && doc.data) {
+            setTable(doc.data)
+            setColWidths(Array(doc.data[0]?.length || 100).fill(80))
+            setRowHeights(Array(doc.data.length).fill(40))
+        }
+    }, [documentId])
+    //автосохранение
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setSaveStatus('saving')
+            try {
+                updateDocument(documentId, table)
+                setSaveStatus('saved')
+            } catch {
+                setSaveStatus('error')
+            }
+        }, 500)
+
+        return () => clearTimeout(timer)
+    }, [table, documentId])
+
+    //Ctrl+S
+    useEffect(() => {
+        const handleSave = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault()
+                updateDocument(documentId, table)
+                setSaveStatus('saved')
+            }
+        }
+        window.addEventListener('keydown', handleSave)
+        return () => window.removeEventListener('keydown', handleSave)
+    }, [table, documentId])
+
     //функ-ции для работы добавления, удаления row col
 
     const addRow = (index) => {
@@ -268,6 +324,15 @@ function Table() {
 
 return (
     <>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', alignItems: 'center' }}>
+            <button onClick={onBack}>← Назад к документам</button>
+            <span>
+                {saveStatus === 'saving' && '💾 Сохранение...'}
+                {saveStatus === 'saved' && '✅ Сохранено'}
+                {saveStatus === 'error' && '❌ Ошибка'}
+            </span>
+        </div>
+
         <input 
             value={activeCell ? table[activeCell.split("-")[0]]?.[activeCell.split("-")[1]]?.raw : ""}
             onChange={(e) => {
