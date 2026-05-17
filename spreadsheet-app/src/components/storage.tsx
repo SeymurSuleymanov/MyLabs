@@ -35,7 +35,7 @@ export const createDocument = (title: string, rows: number, cols: number): Docum
     for (let i = 0; i < rows; i++) {
         data[i] = []
         for (let j = 0; j < cols; j++) {
-            data[i][j] = { raw: " ", computed: " " }
+            data[i][j] = { raw: "", computed: "" };
         }
     }
     

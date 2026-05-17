@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "./Table.css";
 import { updateDocument, getDocument } from './storage';
+import ExportImport from './ExportImport'
 
 type CellValue = string | number | boolean;
 
@@ -15,7 +16,7 @@ function createTable(row: number, col: number) {
     for (let i = 0; i < row; i++) {
         arr[i] = [];
         for (let j = 0; j < col; j++) {
-            arr[i][j] = { raw: " ", computed: " " };
+            arr[i][j] = { raw: "", computed: "" }
         }
     }
     return arr;
@@ -208,6 +209,7 @@ function Table({ documentId, onBack }) {
     const [rowHeights, setRowHeights] = useState(Array(table.length).fill(40));
     const [saveStatus, setSaveStatus] = useState('saved');
 
+
     useEffect(() => {
         const handleClick = () => setMenuPosition(null);
         document.addEventListener('click', handleClick);
@@ -267,7 +269,7 @@ function Table({ documentId, onBack }) {
 
     const addRow = (index) => {
         const newTable = [...table];
-        const newRow = Array(table[0].length).fill({ raw: " ", computed: " " });
+        const newRow = Array(table[0].length).fill({ raw: "", computed: "" })
         newTable.splice(index, 0, newRow);
         setTable(newTable);
     };
@@ -321,17 +323,27 @@ function Table({ documentId, onBack }) {
     for (let i = 0; i < table.length; i++) {
         rowHeaders.push((i + 1).toString());
     }
-
+    //импорт таблицы
+    const handleImport = (newTable: Cell[][]) => {
+        setTable(newTable)
+        setColWidths(Array(newTable[0]?.length || 100).fill(80))
+        setRowHeights(Array(newTable.length).fill(40))
+    }
 return (
     <>
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', alignItems: 'center' }}>
-            <button onClick={onBack}>← Назад к документам</button>
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', alignItems: 'center' }}>
+        <button onClick={onBack}>← Назад к документам</button>
+        
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <ExportImport table={table} onImport={handleImport} />
+            
             <span>
                 {saveStatus === 'saving' && '💾 Сохранение...'}
                 {saveStatus === 'saved' && '✅ Сохранено'}
                 {saveStatus === 'error' && '❌ Ошибка'}
             </span>
         </div>
+    </div>
 
         <input 
             value={activeCell ? table[activeCell.split("-")[0]]?.[activeCell.split("-")[1]]?.raw : ""}
