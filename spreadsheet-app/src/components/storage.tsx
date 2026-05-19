@@ -118,11 +118,22 @@ export const renameDocument = (id: string, newTitle: string) => {
 export const duplicateDocument = (id: string) => {
     const original = getDocument(id)
     
-    if (original) {
-        createDocument(
-            `${original.title} (копия)`,
-            original.data.length,
-            original.data[0]?.length || 5
-        )
+    if (original && original.data) {
+        const docs = getDocuments()
+        
+        const copiedData = JSON.parse(JSON.stringify(original.data))
+        
+        const newDoc: Document = {
+            id: Date.now().toString(),
+            title: `${original.title} (копия)`,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            data: copiedData,
+            preview: original.preview.map(row => [...row])
+        }
+        
+        docs.push(newDoc)
+        saveDocuments(docs)
+        return newDoc
     }
 }

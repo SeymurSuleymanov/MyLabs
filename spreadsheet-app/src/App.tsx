@@ -1,15 +1,18 @@
-import { useState } from "react"
-import Table from "./components/Table"
-import Dashboard from "./components/Dashboard"
+import { useAppDispatch, useAppSelector } from './store'
+import { setCurrentDocument } from './store'
+
+import Dashboard from './components/Dashboard'
+import Table from './components/Table'
 
 function App() {
-    const [currentDocId, setCurrentDocId] = useState(null)
+    const dispatch = useAppDispatch()
+    const currentId = useAppSelector(state => state.documents.currentId)
 
-    if (!currentDocId) {
-        return <Dashboard onSelectDocument={setCurrentDocId} />
+    if (!currentId) {
+        return <Dashboard />
     }
 
-    return <Table documentId={currentDocId} onBack={() => setCurrentDocId(null)} />
+    return <Table />
 }
 
 export default App
