@@ -1,59 +1,46 @@
 import { useState, useEffect } from 'react'
-import { getDocuments, deleteDocument, renameDocument, duplicateDocument, createDocument } from './storage'
+import { useAppDispatch, useAppSelector } from '../store'
+import { fetchDocuments, createNewDocument, deleteDocumentThunk, renameDocumentThunk, duplicateDocumentThunk, setCurrentDocument, setShowModal, setModalData } from '../store'
 
-const Dashboard = ({ onSelectDocument }) => {
-    const [documents, setDocuments] = useState([])
-    const [showModal, setShowModal] = useState(false)
-    const [newTitle, setNewTitle] = useState('Новая таблица')
-    const [newRows, setNewRows] = useState(10)
-    const [newCols, setNewCols] = useState(5)
+const Dashboard = () => {
+    const dispatch = useAppDispatch()
+    const documents = useAppSelector(state => state.documents.list)
+    const showModal = useAppSelector(state => state.ui.showModal)
+    const modalData = useAppSelector(state => state.ui.modalData)
+    
     const [editingId, setEditingId] = useState(null)
     const [editTitle, setEditTitle] = useState('')
 
-    // загружаем документы при монтировании
-    const loadDocs = () => {
-        const docs = getDocuments()
-        setDocuments(docs)
-    }
-
     useEffect(() => {
-        loadDocs()
+        dispatch(fetchDocuments())
     }, [])
 
-    // создание нового документа
     const handleCreate = () => {
-        createDocument(newTitle, newRows, newCols)
-        setShowModal(false)
-        setNewTitle('Новая таблица')
-        loadDocs()
+        dispatch(createNewDocument({ title: modalData.title, rows: modalData.rows, cols: modalData.cols }))
+        dispatch(setShowModal(false))
     }
 
-    // удаление
     const handleDelete = (id) => {
         if (confirm('Точно удалить?')) {
-            deleteDocument(id)
-            loadDocs()
+            dispatch(deleteDocumentThunk(id))
         }
     }
 
-    // переименование
     const handleRename = (id) => {
-        renameDocument(id, editTitle)
+        dispatch(renameDocumentThunk({ id, newTitle: editTitle }))
         setEditingId(null)
-        loadDocs()
     }
 
-    // дублирование
     const handleDuplicate = (id) => {
-        duplicateDocument(id)
-        loadDocs()
+        dispatch(duplicateDocumentThunk(id))
+        setTimeout(() => dispatch(fetchDocuments()), 100)
     }
 
     return (
         <div style={{ padding: '20px' }}>
             <h1>Мои документы</h1>
             
-            <button onClick={() => setShowModal(true)} style={{ marginBottom: '20px' }}>
+            <button onClick={() => dispatch(setShowModal(true))} style={{ marginBottom: '20px' }}>
                 + Создать документ
             </button>
             
@@ -82,7 +69,6 @@ const Dashboard = ({ onSelectDocument }) => {
                             </h3>
                         )}
                         
-                        {/* превью 3x3 */}
                         <div style={{ 
                             background: '#f5f5f5', 
                             padding: '10px', 
@@ -109,7 +95,7 @@ const Dashboard = ({ onSelectDocument }) => {
                         </small>
                         
                         <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                            <button onClick={() => onSelectDocument(doc.id)}>Открыть</button>
+                            <button onClick={() => dispatch(setCurrentDocument(doc.id))}>Открыть</button>
                             <button onClick={() => handleDuplicate(doc.id)}>📋 Дублировать</button>
                             <button onClick={() => {
                                 setEditingId(doc.id)
@@ -121,7 +107,6 @@ const Dashboard = ({ onSelectDocument }) => {
                 ))}
             </div>
             
-            {/* модальное окно */}
             {showModal && (
                 <div style={{
                     position: 'fixed',
@@ -133,7 +118,7 @@ const Dashboard = ({ onSelectDocument }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
-                }} onClick={() => setShowModal(false)}>
+                }} onClick={() => dispatch(setShowModal(false))}>
                     <div style={{
                         background: 'white',
                         padding: '20px',
@@ -144,25 +129,25 @@ const Dashboard = ({ onSelectDocument }) => {
                         <input
                             style={{ width: '100%', marginBottom: '10px', padding: '5px' }}
                             placeholder="Название"
-                            value={newTitle}
-                            onChange={(e) => setNewTitle(e.target.value)}
+                            value={modalData.title}
+                            onChange={(e) => dispatch(setModalData({ ...modalData, title: e.target.value }))}
                         />
                         <input
                             style={{ width: '100%', marginBottom: '10px', padding: '5px' }}
                             type="number"
                             placeholder="Строки"
-                            value={newRows}
-                            onChange={(e) => setNewRows(Number(e.target.value))}
+                            value={modalData.rows}
+                            onChange={(e) => dispatch(setModalData({ ...modalData, rows: Number(e.target.value) }))}
                         />
                         <input
                             style={{ width: '100%', marginBottom: '10px', padding: '5px' }}
                             type="number"
                             placeholder="Столбцы"
-                            value={newCols}
-                            onChange={(e) => setNewCols(Number(e.target.value))}
+                            value={modalData.cols}
+                            onChange={(e) => dispatch(setModalData({ ...modalData, cols: Number(e.target.value) }))}
                         />
                         <button onClick={handleCreate}>Создать</button>
-                        <button onClick={() => setShowModal(false)}>Отмена</button>
+                        <button onClick={() => dispatch(setShowModal(false))}>Отмена</button>
                     </div>
                 </div>
             )}

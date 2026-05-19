@@ -1,47 +1,30 @@
-import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux'
+import { configureStore, createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { useDispatch, useSelector } from 'react-redux'
+import { getDocuments, getDocument, createDocument as createDoc, updateDocument, deleteDocument as deleteDoc, renameDocument as renameDoc, duplicateDocument as duplicateDoc } from './components/storage'
 
-// типы
-type CellValue = string | number | boolean
+// Thunks
+export const fetchDocuments = createAsyncThunk('documents/fetchDocuments', async () => {
+    return getDocuments()
+})
 
-interface Cell {
-    raw: string
-    computed: CellValue
-}
+export const createNewDocument = createAsyncThunk('documents/createNewDocument', async ({ title, rows, cols }) => {
+    return createDoc(title, rows, cols)
+})
 
-interface SpreadsheetState {
-    table: Cell[][]
-    selectedCell: string | null
-    history: {
-        past: Cell[][]
-        future: Cell[][]
-    }
-}
+export const deleteDocumentThunk = createAsyncThunk('documents/deleteDocumentThunk', async (id) => {
+    deleteDoc(id)
+    return id
+})
 
-interface Document {
-    id: string
-    title: string
-    createdAt: string
-    updatedAt: string
-    data: Cell[][]
-    preview: string[][]
-}
+export const renameDocumentThunk = createAsyncThunk('documents/renameDocumentThunk', async ({ id, newTitle }) => {
+    renameDoc(id, newTitle)
+    return { id, newTitle }
+})
 
-interface DocumentsState {
-    list: Document[]
-    currentId: string | null
-    status: 'idle' | 'loading' | 'succeeded' | 'failed'
-}
-
-interface UiState {
-    saveStatus: 'saved' | 'saving' | 'error'
-    showModal: boolean
-    modalData: {
-        title: string
-        rows: number
-        cols: number
-    }
-}
+export const duplicateDocumentThunk = createAsyncThunk('documents/duplicateDocumentThunk', async (id) => {
+    duplicateDoc(id)
+    return id
+})
 
 // spreadsheet слайс
 const spreadsheetSlice = createSlice({
@@ -50,20 +33,22 @@ const spreadsheetSlice = createSlice({
         table: [],
         selectedCell: null,
         history: { past: [], future: [] }
-    } as SpreadsheetState,
+    },
     reducers: {
-        setTable: ( state, action: PayloadAction<Cell[][]> ) => {
-            state.history.past.push(JSON.parse(JSON.stringify(state.table)))
+        setTable: (state, action) => {
+            if (state.table.length > 0) {
+                state.history.past.push(JSON.parse(JSON.stringify(state.table)))
+            }
             state.table = action.payload
             state.history.future = []
         },
-        updateCell: (state, action: PayloadAction<{row: number, col: number, cell: Cell}>) =>{
+        updateCell: (state, action) => {
             state.history.past.push(JSON.parse(JSON.stringify(state.table)))
-            const {row, col, cell} = action.payload
+            const { row, col, cell } = action.payload
             state.table[row][col] = cell
             state.history.future = []
         },
-        setSelectedCell: (state, action: PayloadAction<string | null>) => {
+        setSelectedCell: (state, action) => {
             state.selectedCell = action.payload
         },
         undo: (state) => {
@@ -92,52 +77,53 @@ const documentsSlice = createSlice({
         list: [],
         currentId: null,
         status: 'idle'
-    } as DocumentsState,
+    },
     reducers: {
-        setDocuments: (state, action: PayloadAction<Document[]>) => {
-            state.list = action.payload
-        },
-        setCurrentDocument: (state, action: PayloadAction<string | null>) => {
+        setCurrentDocument: (state, action) => {
             state.currentId = action.payload
-        },
-        addDocument: (state, action: PayloadAction<Document>) => {
-            state.list.push(action.payload)
-        },
-        updateDocumentInList: (state, action: PayloadAction<Document>) => {
-            const index = state.list.findIndex(d => d.id === action.payload.id)
-            if (index !== -1) state.list[index] = action.payload
-        },
-        removeDocument: (state, action: PayloadAction<string>) => {
-            state.list = state.list.filter(d => d.id !== action.payload)
-        },
-        setStatus: (state, action: PayloadAction<'idle'|'loading'|'succeeded'|'failed'>) => {
-            state.status = action.payload
         }
+    },
+    extraReducers: (builder) => {
+        builder
+            .addCase(fetchDocuments.fulfilled, (state, action) => {
+                state.list = action.payload
+                state.status = 'succeeded'
+            })
+            .addCase(createNewDocument.fulfilled, (state, action) => {
+                state.list.push(action.payload)
+            })
+            .addCase(deleteDocumentThunk.fulfilled, (state, action) => {
+                state.list = state.list.filter(d => d.id !== action.payload)
+            })
+            .addCase(renameDocumentThunk.fulfilled, (state, action) => {
+                const doc = state.list.find(d => d.id === action.payload.id)
+                if (doc) doc.title = action.payload.newTitle
+            })
     }
 })
 
 // ui слайс
-const uiSlice =createSlice({
+const uiSlice = createSlice({
     name: 'ui',
     initialState: {
-        saveStatus: 'saved' as 'saved'|'saving'|'error',
+        saveStatus: 'saved',
         showModal: false,
         modalData: { title: 'Новая таблица', rows: 10, cols: 5 }
-    } as UiState,
+    },
     reducers: {
-        setSaveStatus: (state, action: PayloadAction<'saved'|'saving'|'error'>) => {
+        setSaveStatus: (state, action) => {
             state.saveStatus = action.payload
         },
-        setShowModal: (state, action: PayloadAction<boolean>) => {
+        setShowModal: (state, action) => {
             state.showModal = action.payload
         },
-        setModalData: (state, action: PayloadAction<{title: string, rows: number, cols: number}>) => {
+        setModalData: (state, action) => {
             state.modalData = action.payload
         }
     }
 })
 
-// auth слайс (заготовка)
+// auth слайс
 const authSlice = createSlice({
     name: 'auth',
     initialState: {
@@ -146,20 +132,43 @@ const authSlice = createSlice({
     reducers: {}
 })
 
+// middleware
+let saveTimeout = null
+
+const autoSaveMiddleware = (store) => (next) => (action) => {
+    const result = next(action)
+    
+    const state = store.getState()
+    const currentId = state.documents.currentId
+    const table = state.spreadsheet.table
+    
+    if (action.type?.startsWith('spreadsheet/') && action.type !== 'spreadsheet/undo' && action.type !== 'spreadsheet/redo') {
+        if (saveTimeout) clearTimeout(saveTimeout)
+        saveTimeout = setTimeout(() => {
+            if (currentId && table.length > 0) {
+                updateDocument(currentId, table)
+            }
+        }, 500)
+    }
+    
+    return result
+}
+
 export const store = configureStore({
     reducer: {
         spreadsheet: spreadsheetSlice.reducer,
         documents: documentsSlice.reducer,
         ui: uiSlice.reducer,
         auth: authSlice.reducer
-    }
+    },
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware().concat(autoSaveMiddleware),
+    devTools: true
 })
 
-export type RootState = ReturnType<typeof store.getState>
-export type AppDispatch = typeof store.dispatch
-export const useAppDispatch: () => AppDispatch = useDispatch
-export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
+export const useAppDispatch = () => useDispatch()
+export const useAppSelector = useSelector
 
 export const { setTable, updateCell, setSelectedCell, undo, redo } = spreadsheetSlice.actions
-export const { setDocuments, setCurrentDocument, addDocument, updateDocumentInList, removeDocument, setStatus } = documentsSlice.actions
+export const { setCurrentDocument } = documentsSlice.actions
 export const { setSaveStatus, setShowModal, setModalData } = uiSlice.actions

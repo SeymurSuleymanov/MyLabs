@@ -1,10 +1,8 @@
-import { useAppDispatch, useAppSelector } from './hooks'  
-
+import { useAppSelector } from './store'
 import Dashboard from './components/Dashboard'
 import Table from './components/Table'
 
 function App() {
-    const dispatch = useAppDispatch()
     const currentId = useAppSelector(state => state.documents.currentId)
 
     if (!currentId) {

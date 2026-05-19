@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import "./Table.css";
-import { updateDocument, getDocument } from './storage';
+import { updateDocument } from './storage';
 import ExportImport from './ExportImport'
+import { useAppDispatch, useAppSelector } from '../store'
+import { setTable, updateCell, setSelectedCell, undo, redo, setSaveStatus, setCurrentDocument } from '../store'
 
 type CellValue = string | number | boolean;
 
@@ -191,24 +193,21 @@ function ResizerRow({ height, onResize }) {
 }
 
 //основная функц-ия
-function Table({ documentId, onBack }) {
+function Table() {
+    const dispatch = useAppDispatch()
+    const table = useAppSelector(state => state.spreadsheet.table)
+    const selectedCell = useAppSelector(state => state.spreadsheet.selectedCell)
+    const saveStatus = useAppSelector(state => state.ui.saveStatus)
+    const currentId = useAppSelector(state => state.documents.currentId)
 
-    const [table, setTable] = useState<Cell[][]>(() => createTable(26, 100));
-    const [select, setSelect] = useState(null);
     const [editing, setEditing] = useState(null);
     const [editValue, setEditValue] = useState("");
     const [lastCell, setLastCell] = useState(null);
     const [range, setRange] = useState(null);
-
-    const [activeCell, setActiveCell] = useState(null);
-
     const [menuPosition, setMenuPosition] = useState(null);
     const [menuCell, setMenuCell] = useState(null);
-
-    const [colWidths, setColWidths] = useState(Array(table[0].length).fill(80));
-    const [rowHeights, setRowHeights] = useState(Array(table.length).fill(40));
-    const [saveStatus, setSaveStatus] = useState('saved');
-
+    const [colWidths, setColWidths] = useState(Array(table[0]?.length || 100).fill(80));
+    const [rowHeights, setRowHeights] = useState(Array(table?.length || 26).fill(40));
 
     useEffect(() => {
         const handleClick = () => setMenuPosition(null);
@@ -218,75 +217,74 @@ function Table({ documentId, onBack }) {
 
     //предупреждение при несохранении
     useEffect(() => {
-    const handleBeforeUnload = (e) => {
-        if (saveStatus === 'saving') {
-            e.preventDefault();
-            e.returnValue = 'Есть несохранённые изменения';
-        }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+        const handleBeforeUnload = (e) => {
+            if (saveStatus === 'saving') {
+                e.preventDefault();
+                e.returnValue = 'Есть несохранённые изменения';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [saveStatus]);
 
-    // load documents change id 
+    // загрузка документа
     useEffect(() => {
-        const doc = getDocument(documentId)
-        if (doc && doc.data) {
-            setTable(doc.data)
-            setColWidths(Array(doc.data[0]?.length || 100).fill(80))
-            setRowHeights(Array(doc.data.length).fill(40))
-        }
-    }, [documentId])
-    //автосохранение
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setSaveStatus('saving')
-            try {
-                updateDocument(documentId, table)
-                setSaveStatus('saved')
-            } catch {
-                setSaveStatus('error')
+        import('./storage').then(({ getDocument }) => {
+            const doc = getDocument(currentId)
+            if (doc && doc.data) {
+                dispatch(setTable(doc.data))
+                setColWidths(Array(doc.data[0]?.length || 100).fill(80))
+                setRowHeights(Array(doc.data.length).fill(40))
             }
-        }, 500)
+        })
+    }, [currentId])
 
-        return () => clearTimeout(timer)
-    }, [table, documentId])
-
-    //Ctrl+S
+    // Ctrl+Z Undo
     useEffect(() => {
-        const handleSave = (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        const handleUndo = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
                 e.preventDefault()
-                updateDocument(documentId, table)
-                setSaveStatus('saved')
+                dispatch(undo())
             }
         }
-        window.addEventListener('keydown', handleSave)
-        return () => window.removeEventListener('keydown', handleSave)
-    }, [table, documentId])
+        window.addEventListener('keydown', handleUndo)
+        return () => window.removeEventListener('keydown', handleUndo)
+    }, [])
+
+    // Ctrl+Y Redo
+    useEffect(() => {
+        const handleRedo = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+                e.preventDefault()
+                dispatch(redo())
+            }
+        }
+        window.addEventListener('keydown', handleRedo)
+        return () => window.removeEventListener('keydown', handleRedo)
+    }, [])
 
     //функ-ции для работы добавления, удаления row col
 
     const addRow = (index) => {
         const newTable = [...table];
-        const newRow = Array(table[0].length).fill({ raw: "", computed: "" })
+        const newRow = Array(table[0]?.length || 100).fill({ raw: "", computed: "" })
         newTable.splice(index, 0, newRow);
-        setTable(newTable);
+        dispatch(setTable(newTable));
     };
 
     const deleteRow = (index) => {
         const newTable = [...table];
         newTable.splice(index, 1);
-        setTable(newTable);
+        dispatch(setTable(newTable));
     };
 
     const addColumn = (index) => {
         const newTable = table.map(row => {
             const newRow = [...row];
-            newRow.splice(index, 0, { raw: " ", computed: " " });
+            newRow.splice(index, 0, { raw: "", computed: "" });
             return newRow;
         });
-        setTable(newTable);
+        dispatch(setTable(newTable));
     };
 
     const deleteColumn = (index) => {
@@ -295,7 +293,7 @@ function Table({ documentId, onBack }) {
             newRow.splice(index, 1);
             return newRow;
         });
-        setTable(newTable);
+        dispatch(setTable(newTable));
     };
 
     const startEdit = (row, col, currentValue) => {
@@ -305,34 +303,39 @@ function Table({ documentId, onBack }) {
 
     const saveEdit = () => {
         if (!editing) return;
-        const newTable = [...table];
         const rawValue = editValue;
         const computedValue = computeValue(rawValue, table);
-        
-        newTable[editing.row][editing.col] = { raw: rawValue, computed: computedValue };
-        setTable(newTable);
+        dispatch(updateCell({ row: editing.row, col: editing.col, cell: { raw: rawValue, computed: computedValue } }))
         setEditing(null);
     };
 
     const columnHeaders = [];
-    for (let i = 0; i < table[0].length; i++) {
-        columnHeaders.push(getColumnLetter(i));
+    if (table[0]) {
+        for (let i = 0; i < table[0].length; i++) {
+            columnHeaders.push(getColumnLetter(i));
+        }
     }
 
     const rowHeaders = [];
     for (let i = 0; i < table.length; i++) {
         rowHeaders.push((i + 1).toString());
     }
+
     //импорт таблицы
     const handleImport = (newTable: Cell[][]) => {
-        setTable(newTable)
+        dispatch(setTable(newTable))
         setColWidths(Array(newTable[0]?.length || 100).fill(80))
         setRowHeights(Array(newTable.length).fill(40))
     }
+
+    if (!table || table.length === 0) {
+        return <div>Загрузка...</div>
+    }
+
 return (
     <>
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', alignItems: 'center' }}>
-        <button onClick={onBack}>← Назад к документам</button>
+        <button onClick={() => dispatch(setCurrentDocument(null))}>← Назад к документам</button>
         
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
             <ExportImport table={table} onImport={handleImport} />
@@ -346,13 +349,12 @@ return (
     </div>
 
         <input 
-            value={activeCell ? table[activeCell.split("-")[0]]?.[activeCell.split("-")[1]]?.raw : ""}
+            value={selectedCell ? table[selectedCell.split("-")[0]]?.[selectedCell.split("-")[1]]?.raw : ""}
             onChange={(e) => {
-                if (!activeCell) return;
-                const [row, col] = activeCell.split("-").map(Number);
-                const newTable = [...table];
-                newTable[row][col] = { raw: e.target.value, computed: computeValue(e.target.value, table) };
-                setTable(newTable);
+                if (!selectedCell) return;
+                const [row, col] = selectedCell.split("-").map(Number);
+                const computedValue = computeValue(e.target.value, table);
+                dispatch(updateCell({ row, col, cell: { raw: e.target.value, computed: computedValue } }))
             }}
             placeholder="Введите формулу..."
             className="formula-bar"
@@ -413,12 +415,10 @@ return (
                                     }}
                                     onClick={(e) => {
                                         const current = `${rowIndex}-${colIndex}`;
-                                        setActiveCell(current);
+                                        dispatch(setSelectedCell(current));
                                         if (e.shiftKey && lastCell) {
                                             setRange({ start: lastCell, end: current });
-                                            setSelect(current);
                                         } else {
-                                            setSelect(current);
                                             setLastCell(current);
                                             setRange(null);
                                         }
@@ -431,7 +431,7 @@ return (
                                     }}
                                     key={`${rowIndex}-${colIndex}`} 
                                     className={`cell-button ${
-                                        select === `${rowIndex}-${colIndex}` || isRange(`${rowIndex}-${colIndex}`, range) 
+                                        selectedCell === `${rowIndex}-${colIndex}` || isRange(`${rowIndex}-${colIndex}`, range) 
                                             ? "select" 
                                             : ""
                                     }`}>
