@@ -1,5 +1,4 @@
-import { useAppDispatch, useAppSelector } from './store'
-import { setCurrentDocument } from './store'
+import { useAppDispatch, useAppSelector } from './hooks'  
 
 import Dashboard from './components/Dashboard'
 import Table from './components/Table'
