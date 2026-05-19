@@ -193,12 +193,11 @@ function ResizerRow({ height, onResize }) {
 }
 
 //основная функц-ия
-function Table() {
+function Table({ documentId }) {
     const dispatch = useAppDispatch()
     const table = useAppSelector(state => state.spreadsheet.table)
     const selectedCell = useAppSelector(state => state.spreadsheet.selectedCell)
     const saveStatus = useAppSelector(state => state.ui.saveStatus)
-    const currentId = useAppSelector(state => state.documents.currentId)
 
     const [editing, setEditing] = useState(null);
     const [editValue, setEditValue] = useState("");

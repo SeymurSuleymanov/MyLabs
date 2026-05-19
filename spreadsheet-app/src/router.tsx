@@ -1,5 +1,5 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
-import AppLayout from './components/AppLayout'
+import { createBrowserRouter, Navigate, Link, useParams } from 'react-router-dom'
+import AppLayout from './AppLayout'
 import Dashboard from './components/Dashboard'
 import Table from './components/Table'
 import { useAppSelector } from './store'
@@ -9,9 +9,9 @@ const ProfilePage = () => {
     return (
         <div>
             <h1>Профиль пользователя</h1>
-            <p>Имя: Mock User</p>
-            <p>Email: mock@example.com</p>
-            <p style={{ color: '#999' }}>Авторизация типо</p>
+            <p>Имя: User</p>
+            <p>Email: @example.com</p>
+            <p style={{ color: '#999' }}>Авторизация</p>
         </div>
     )
 }
@@ -29,13 +29,10 @@ const NotFoundPage = () => {
 
 // защита маршрутов (заглушка)
 const ProtectedRoute = ({ children }) => {
-    // пока всегда true, позже добавим авторизацию
     const isAuth = true
-    
     if (!isAuth) {
         return <Navigate to="/login" replace />
     }
-    
     return children
 }
 
@@ -49,7 +46,7 @@ const SpreadsheetPage = () => {
         return <Navigate to="/404" replace />
     }
     
-    return <Table />
+    return <Table documentId={documentId} />
 }
 
 export const router = createBrowserRouter([

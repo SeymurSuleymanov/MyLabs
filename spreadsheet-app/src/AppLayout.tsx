@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useParams } from 'react-router-dom'
-import { useAppSelector } from '../store'
+import { useAppSelector } from './store'
 
 const AppLayout = () => {
     const location = useLocation()
@@ -14,7 +14,7 @@ const AppLayout = () => {
         if (location.pathname.includes('/documents/')) {
             return (
                 <span>
-                    <Link to="/dashboard">Мои документы</span> → <span>{currentDoc?.title || 'Загрузка...'}</span>
+                    <Link to="/dashboard">Мои документы</Link> → <span>{currentDoc?.title || 'Загрузка...'}</span>
                 </span>
             )
         }

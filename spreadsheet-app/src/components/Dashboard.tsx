@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../store'
-import { fetchDocuments, createNewDocument, deleteDocumentThunk, renameDocumentThunk, duplicateDocumentThunk, setCurrentDocument, setShowModal, setModalData } from '../store'
+import { fetchDocuments, createNewDocument, deleteDocumentThunk, renameDocumentThunk, duplicateDocumentThunk, setShowModal, setModalData } from '../store'
 
 const Dashboard = () => {
     const dispatch = useAppDispatch()
+    const navigate = useNavigate()
     const documents = useAppSelector(state => state.documents.list)
     const showModal = useAppSelector(state => state.ui.showModal)
     const modalData = useAppSelector(state => state.ui.modalData)
@@ -34,6 +36,10 @@ const Dashboard = () => {
     const handleDuplicate = (id) => {
         dispatch(duplicateDocumentThunk(id))
         setTimeout(() => dispatch(fetchDocuments()), 100)
+    }
+
+    const handleOpen = (id) => {
+        navigate(`/documents/${id}`)
     }
 
     return (
@@ -95,7 +101,7 @@ const Dashboard = () => {
                         </small>
                         
                         <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                            <button onClick={() => dispatch(setCurrentDocument(doc.id))}>Открыть</button>
+                            <button onClick={() => handleOpen(doc.id)}>Открыть</button>
                             <button onClick={() => handleDuplicate(doc.id)}>📋 Дублировать</button>
                             <button onClick={() => {
                                 setEditingId(doc.id)
