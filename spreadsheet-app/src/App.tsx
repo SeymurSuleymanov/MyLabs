@@ -1,15 +1,8 @@
-import { useAppSelector } from './store'
-import Dashboard from './components/Dashboard'
-import Table from './components/Table'
+import { RouterProvider } from 'react-router-dom'
+import { router } from './router'
 
 function App() {
-    const currentId = useAppSelector(state => state.documents.currentId)
-
-    if (!currentId) {
-        return <Dashboard />
-    }
-
-    return <Table />
+    return <RouterProvider router={router} />
 }
 
 export default App
