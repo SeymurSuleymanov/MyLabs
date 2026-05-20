@@ -3,7 +3,8 @@ import "./Table.css";
 import { updateDocument } from './storage';
 import ExportImport from './ExportImport'
 import { useAppDispatch, useAppSelector } from '../store'
-import { setTable, updateCell, setSelectedCell, undo, redo, setSaveStatus, setCurrentDocument } from '../store'
+import { setTable, updateCell, setSelectedCell, undo, redo, setSaveStatus } from '../store'
+import { useNavigate } from 'react-router-dom'
 
 type CellValue = string | number | boolean;
 
@@ -195,6 +196,7 @@ function ResizerRow({ height, onResize }) {
 //основная функц-ия
 function Table({ documentId }) {
     const dispatch = useAppDispatch()
+    const navigate = useNavigate()
     const table = useAppSelector(state => state.spreadsheet.table)
     const selectedCell = useAppSelector(state => state.spreadsheet.selectedCell)
     const saveStatus = useAppSelector(state => state.ui.saveStatus)
@@ -229,14 +231,42 @@ function Table({ documentId }) {
     // загрузка документа
     useEffect(() => {
         import('./storage').then(({ getDocument }) => {
-            const doc = getDocument(currentId)
+            const doc = getDocument(documentId)
             if (doc && doc.data) {
                 dispatch(setTable(doc.data))
                 setColWidths(Array(doc.data[0]?.length || 100).fill(80))
                 setRowHeights(Array(doc.data.length).fill(40))
             }
         })
-    }, [currentId])
+    }, [documentId])
+
+    //автосохранение
+    useEffect(() => {
+        if (!documentId || table.length === 0) return;
+        const timer = setTimeout(() => {
+            dispatch(setSaveStatus('saving'))
+            try {
+                updateDocument(documentId, table)
+                dispatch(setSaveStatus('saved'))
+            } catch {
+                dispatch(setSaveStatus('error'))
+            }
+        }, 500)
+        return () => clearTimeout(timer)
+    }, [table, documentId])
+
+    //Ctrl+S
+    useEffect(() => {
+        const handleSave = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault()
+                updateDocument(documentId, table)
+                dispatch(setSaveStatus('saved'))
+            }
+        }
+        window.addEventListener('keydown', handleSave)
+        return () => window.removeEventListener('keydown', handleSave)
+    }, [table, documentId])
 
     // Ctrl+Z Undo
     useEffect(() => {
@@ -334,7 +364,7 @@ function Table({ documentId }) {
 return (
     <>
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', alignItems: 'center' }}>
-        <button onClick={() => dispatch(setCurrentDocument(null))}>← Назад к документам</button>
+        <button onClick={() => navigate('/dashboard')}>← Назад к документам</button>
         
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
             <ExportImport table={table} onImport={handleImport} />
