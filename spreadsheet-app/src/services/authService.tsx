@@ -1,33 +1,48 @@
-const API_URL = 'http://localhost:5173/api'
+let users = [
+    { id: '1', name: 'Admin', email: 'admin@example.com', password: '12345678' }
+]
 
 export const authService = {
     async login(email, password) {
-        const res = await fetch(`${API_URL}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        })
-        if (!res.ok) throw new Error('Ошибка входа')
-        return res.json()
+        const user = users.find(u => u.email === email && u.password === password)
+        
+        if (!user) {
+            throw new Error('Неверный email или пароль')
+        }
+        
+        return {
+            user: { id: user.id, name: user.name, email: user.email },
+            accessToken: 'fake-token-' + Date.now(),
+            refreshToken: 'fake-refresh-' + Date.now()
+        }
     },
 
     async register(name, email, password) {
-        const res = await fetch(`${API_URL}/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password })
-        })
-        if (!res.ok) throw new Error('Ошибка регистрации')
-        return res.json()
+        const existing = users.find(u => u.email === email)
+        
+        if (existing) {
+            throw new Error('Email уже зарегистрирован')
+        }
+        
+        const newUser = {
+            id: Date.now().toString(),
+            name,
+            email,
+            password
+        }
+        
+        users.push(newUser)
+        
+        return {
+            user: { id: newUser.id, name: newUser.name, email: newUser.email },
+            accessToken: 'fake-token-' + Date.now(),
+            refreshToken: 'fake-refresh-' + Date.now()
+        }
     },
-
+    
     async refreshToken(refreshToken) {
-        const res = await fetch(`${API_URL}/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken })
-        })
-        if (!res.ok) throw new Error('Ошибка обновления токена')
-        return res.json()
+        return {
+            accessToken: 'new-fake-token-' + Date.now()
+        }
     }
 }
