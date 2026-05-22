@@ -123,13 +123,58 @@ const uiSlice = createSlice({
     }
 })
 
+interface AuthState {
+    user: null | { id: string; name: string; email: string }
+    accessToken: string | null
+    refreshToken: string | null
+}
+
 // auth слайс
 const authSlice = createSlice({
     name: 'auth',
     initialState: {
-        user: { id: '1', name: 'Mock User', email: 'mock@example.com' }
-    },
-    reducers: {}
+        user: null,
+        accessToken: null,
+        refreshToken: null
+    } as AuthState,
+    reducers: {
+        setUser: (state, action) => {
+            state.user = action.payload
+        },
+        setTokens: (state, action) => {
+            state.accessToken = action.payload.accessToken
+            state.refreshToken = action.payload.refreshToken
+        },
+        logout: (state) => {
+            state.user = null
+            state.accessToken = null
+            state.refreshToken = null
+        }
+    }
+})
+
+
+const authSlice = createSlice({
+    name: 'auth',
+    initialState: {
+        user: null,
+        accessToken: null,
+        refreshToken: null
+    } as AuthState,
+    reducers: {
+        setUser: (state, action) => {
+            state.user = action.payload
+        },
+        setTokens: (state, action) => {
+            state.accessToken = action.payload.accessToken
+            state.refreshToken = action.payload.refreshToken
+        },
+        logout: (state) => {
+            state.user = null
+            state.accessToken = null
+            state.refreshToken = null
+        }
+    }
 })
 
 // middleware
@@ -172,3 +217,4 @@ export const useAppSelector = useSelector
 export const { setTable, updateCell, setSelectedCell, undo, redo } = spreadsheetSlice.actions
 export const { setCurrentDocument } = documentsSlice.actions
 export const { setSaveStatus, setShowModal, setModalData } = uiSlice.actions
+export const { setUser, setTokens, logout } = authSlice.actions
