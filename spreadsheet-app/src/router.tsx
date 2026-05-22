@@ -2,6 +2,8 @@ import { createBrowserRouter, Navigate, Link, useParams } from 'react-router-dom
 import AppLayout from './AppLayout'
 import Dashboard from './components/Dashboard'
 import Table from './components/Table'
+import LoginPage from './services/LoginPage'
+import RegisterPage from './services/RegisterPage'
 import { useAppSelector } from './store'
 
 // заглушка для профиля
@@ -27,10 +29,10 @@ const NotFoundPage = () => {
     )
 }
 
-// защита маршрутов (заглушка)
+// защита маршрутов
 const ProtectedRoute = ({ children }) => {
-    const isAuth = true
-    if (!isAuth) {
+    const user = useAppSelector(state => state.auth.user)
+    if (!user) {
         return <Navigate to="/login" replace />
     }
     return children
@@ -50,6 +52,14 @@ const SpreadsheetPage = () => {
 }
 
 export const router = createBrowserRouter([
+    {
+        path: '/login',
+        element: <LoginPage />
+    },
+    {
+        path: '/register',
+        element: <RegisterPage />
+    },
     {
         path: '/',
         element: <Navigate to="/dashboard" replace />
