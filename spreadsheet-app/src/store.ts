@@ -3,12 +3,18 @@ import { useDispatch, useSelector } from 'react-redux'
 import { getDocuments, getDocument, createDocument as createDoc, updateDocument, deleteDocument as deleteDoc, renameDocument as renameDoc, duplicateDocument as duplicateDoc } from './components/storage'
 
 // Thunks
-export const fetchDocuments = createAsyncThunk('documents/fetchDocuments', async () => {
-    return getDocuments()
+export const fetchDocuments = createAsyncThunk('documents/fetchDocuments', async (_, { getState }) => {
+    const state = getState() as any
+    const userId = state.auth.user?.id
+    if (!userId) return []
+    const docs = getDocumentsByUser(userId)
+    return docs
 })
 
-export const createNewDocument = createAsyncThunk('documents/createNewDocument', async ({ title, rows, cols }) => {
-    return createDoc(title, rows, cols)
+export const createNewDocument = createAsyncThunk('documents/createNewDocument', async ({ title, rows, cols }, { getState }) => {
+    const state = getState() as any
+    const userId = state.auth.user?.id
+    return createDoc(title, rows, cols, userId)
 })
 
 export const deleteDocumentThunk = createAsyncThunk('documents/deleteDocumentThunk', async (id) => {

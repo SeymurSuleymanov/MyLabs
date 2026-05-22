@@ -26,19 +26,18 @@ export const getDocuments = () => {
 const saveDocuments = (docs: Document[]) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(docs))
 }
-
 // create new document
-export const createDocument = (title: string, rows: number, cols: number): Document => {
+export const createDocument = (title: string, rows: number, cols: number, userId: string): Document => {
     const docs = getDocuments()
 
     const data: Cell[][] = []
     for (let i = 0; i < rows; i++) {
         data[i] = []
         for (let j = 0; j < cols; j++) {
-            data[i][j] = { raw: "", computed: "" };
+            data[i][j] = { raw: "", computed: "" }
         }
     }
-    
+
     //preview 3x3
     const preview: string[][] = []
     for (let i = 0; i < Math.min(3, rows); i++) {
@@ -54,7 +53,8 @@ export const createDocument = (title: string, rows: number, cols: number): Docum
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         data,
-        preview
+        preview,
+        userId  // добавляем userId
     }
     
     docs.push(newDoc)
@@ -97,9 +97,9 @@ export const deleteDocument = (id: string) => {
 }
 
 // get documents by id
-export const getDocument = (id: string): Document | null => {
+export const getDocumentsByUser = (userId: string) => {
     const docs = getDocuments()
-    return docs.find(d => d.id === id) || null
+    return docs.filter(d => d.userId === userId)
 }
 
 // Rename documents
