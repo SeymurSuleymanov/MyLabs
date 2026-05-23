@@ -42,12 +42,13 @@ const ProtectedRoute = ({ children }) => {
 const SpreadsheetPage = () => {
     const { documentId } = useParams()
     const documents = useAppSelector(state => state.documents.list)
-    const docExists = documents.some(d => d.id === documentId)
-    
-    if (!docExists && documentId) {
+    const user = useAppSelector(state => state.auth.user)
+    const doc = documents.find(d => d.id === documentId)
+    if (doc && doc.userId !== user?.id) {
+        return <Navigate to="/dashboard" replace />
+    } if (!doc && documentId) {
         return <Navigate to="/404" replace />
-    }
-    
+    }  
     return <Table documentId={documentId} />
 }
 

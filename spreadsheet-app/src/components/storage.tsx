@@ -12,6 +12,7 @@ interface Document {
     updatedAt: string;
     data: Cell[][];
     preview: string[][];
+    userId: string;
 }
 
 const STORAGE_KEY = 'excel_documents'
