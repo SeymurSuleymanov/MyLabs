@@ -17,6 +17,12 @@ interface Document {
 
 const STORAGE_KEY = 'excel_documents'
 
+export const getDocument = (id: string): Document | null => {
+    const docs = getDocuments()
+    return docs.find(d => d.id === id) || null
+}
+
+
 // get every documents
 export const getDocuments = () => {
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -130,7 +136,8 @@ export const duplicateDocument = (id: string) => {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             data: copiedData,
-            preview: original.preview.map(row => [...row])
+            preview: original.preview.map(row => [...row]),
+            userId: original.userId  // ← ЭТА СТРОКА БЫЛА ПРОПУЩЕНА
         }
         
         docs.push(newDoc)

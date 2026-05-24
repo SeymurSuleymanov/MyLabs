@@ -1,9 +1,19 @@
-let users = [
-    { id: '1', name: 'Admin', email: 'admin@example.com', password: '12345678' }
-]
+const USERS_KEY = 'app_users'
+
+const getUsers = () => {
+    const stored = localStorage.getItem(USERS_KEY)
+    if (stored) return JSON.parse(stored)
+    return [{ id: '1', name: 'Admin', email: 'admin@example.com', password: '12345678' }]
+}
+
+// сохраняем пользователей
+const saveUsers = (users) => {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users))
+}
 
 export const authService = {
     async login(email, password) {
+        const users = getUsers()
         const user = users.find(u => u.email === email && u.password === password)
         
         if (!user) {
@@ -18,6 +28,7 @@ export const authService = {
     },
 
     async register(name, email, password) {
+        const users = getUsers()
         const existing = users.find(u => u.email === email)
         
         if (existing) {
@@ -32,6 +43,7 @@ export const authService = {
         }
         
         users.push(newUser)
+        saveUsers(users)
         
         return {
             user: { id: newUser.id, name: newUser.name, email: newUser.email },

@@ -1,6 +1,6 @@
 import { configureStore, createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { useDispatch, useSelector } from 'react-redux'
-import { getDocuments, getDocument, createDocument as createDoc, updateDocument, deleteDocument as deleteDoc, renameDocument as renameDoc, duplicateDocument as duplicateDoc } from './components/storage'
+import { getDocuments, getDocument, createDocument as createDoc, updateDocument, deleteDocument as deleteDoc, renameDocument as renameDoc, duplicateDocument as duplicateDoc, getDocumentsByUser } from './components/storage'
 
 // Thunks
 export const fetchDocuments = createAsyncThunk('documents/fetchDocuments', async (_, { getState }) => {
@@ -28,8 +28,8 @@ export const renameDocumentThunk = createAsyncThunk('documents/renameDocumentThu
 })
 
 export const duplicateDocumentThunk = createAsyncThunk('documents/duplicateDocumentThunk', async (id) => {
-    duplicateDoc(id)
-    return id
+    const newDoc = duplicateDoc(id)
+    return newDoc
 })
 
 // spreadsheet слайс
@@ -101,6 +101,11 @@ const documentsSlice = createSlice({
             .addCase(deleteDocumentThunk.fulfilled, (state, action) => {
                 state.list = state.list.filter(d => d.id !== action.payload)
             })
+            .addCase(duplicateDocumentThunk.fulfilled, (state, action) => {
+                if (action.payload) {
+                    state.list.push(action.payload)
+                }
+            })
             .addCase(renameDocumentThunk.fulfilled, (state, action) => {
                 const doc = state.list.find(d => d.id === action.payload.id)
                 if (doc) doc.title = action.payload.newTitle
@@ -136,30 +141,6 @@ interface AuthState {
 }
 
 // auth слайс
-const authSlice = createSlice({
-    name: 'auth',
-    initialState: {
-        user: null,
-        accessToken: null,
-        refreshToken: null
-    } as AuthState,
-    reducers: {
-        setUser: (state, action) => {
-            state.user = action.payload
-        },
-        setTokens: (state, action) => {
-            state.accessToken = action.payload.accessToken
-            state.refreshToken = action.payload.refreshToken
-        },
-        logout: (state) => {
-            state.user = null
-            state.accessToken = null
-            state.refreshToken = null
-        }
-    }
-})
-
-
 const authSlice = createSlice({
     name: 'auth',
     initialState: {

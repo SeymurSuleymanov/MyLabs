@@ -8,12 +8,13 @@ import { useAppSelector } from './store'
 
 // заглушка для профиля
 const ProfilePage = () => {
+    const user = useAppSelector(state => state.auth.user)
+    
     return (
         <div>
             <h1>Профиль пользователя</h1>
-            <p>Имя: User</p>
-            <p>Email: @example.com</p>
-            <p style={{ color: '#999' }}>Авторизация</p>
+            <p>Имя: {user?.name || 'Не указано'}</p>
+            <p>Email: {user?.email || 'Не указан'}</p>
         </div>
     )
 }
