@@ -38,7 +38,8 @@ const spreadsheetSlice = createSlice({
     initialState: {
         table: [],
         selectedCell: null,
-        history: { past: [], future: [] }
+        history: { past: [], future: [] },
+        styles: {}
     },
     reducers: {
         setTable: (state, action) => {
@@ -56,6 +57,16 @@ const spreadsheetSlice = createSlice({
         },
         setSelectedCell: (state, action) => {
             state.selectedCell = action.payload
+        },
+        setCellStyle: (state, action) => {
+            const { key, style } = action.payload
+            state.styles[key] = { ...state.styles[key], ...style }
+        },
+        setCellStyles: (state, action) => {
+            const { keys, style } = action.payload
+            keys.forEach(key => {
+                state.styles[key] = { ...state.styles[key], ...style } 
+            }
         },
         undo: (state) => {
             if (state.history.past.length === 0) return
@@ -201,7 +212,7 @@ export const store = configureStore({
 export const useAppDispatch = () => useDispatch()
 export const useAppSelector = useSelector
 
-export const { setTable, updateCell, setSelectedCell, undo, redo } = spreadsheetSlice.actions
+export const { setTable, updateCell, setSelectedCell, undo, redo, setCellStyle, setCellStyles } = spreadsheetSlice.actions
 export const { setCurrentDocument } = documentsSlice.actions
 export const { setSaveStatus, setShowModal, setModalData } = uiSlice.actions
 export const { setUser, setTokens, logout } = authSlice.actions
