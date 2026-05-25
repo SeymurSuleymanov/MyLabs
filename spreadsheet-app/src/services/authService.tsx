@@ -6,7 +6,6 @@ const getUsers = () => {
     return [{ id: '1', name: 'Admin', email: 'admin@example.com', password: '12345678' }]
 }
 
-// сохраняем пользователей
 const saveUsers = (users) => {
     localStorage.setItem(USERS_KEY, JSON.stringify(users))
 }
@@ -56,5 +55,27 @@ export const authService = {
         return {
             accessToken: 'new-fake-token-' + Date.now()
         }
+    },
+
+    async changeName(userId, newName) {
+        const users = getUsers()
+        const user = users.find(u => u.id === userId)
+        if (!user) throw new Error('Пользователь не найден')
+        
+        user.name = newName
+        saveUsers(users)
+        return { user: { id: user.id, name: user.name, email: user.email } }
+    },
+
+    async changePassword(userId, oldPassword, newPassword) {
+        const users = getUsers()
+        const user = users.find(u => u.id === userId)
+        if (!user) throw new Error('Пользователь не найден')
+        if (user.password !== oldPassword) throw new Error('Неверный старый пароль')
+        if (newPassword.length < 8) throw new Error('Новый пароль должен быть не менее 8 символов')
+        
+        user.password = newPassword
+        saveUsers(users)
+        return { success: true }
     }
 }

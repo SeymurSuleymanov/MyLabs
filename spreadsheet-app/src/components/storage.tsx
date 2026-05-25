@@ -13,6 +13,7 @@ interface Document {
     data: Cell[][];
     preview: string[][];
     userId: string;
+    styles?: any;
 }
 
 const STORAGE_KEY = 'excel_documents'
@@ -70,7 +71,7 @@ export const createDocument = (title: string, rows: number, cols: number, userId
 }
 
 // Update document (auto save)
-export const updateDocument = (id: string, data: Cell[][]) => {
+export const updateDocument = (id: string, data: Cell[][], styles?: any) => {
     const docs = getDocuments()
     const index = docs.findIndex(d => d.id === id)
     
@@ -90,7 +91,8 @@ export const updateDocument = (id: string, data: Cell[][]) => {
             ...docs[index],
             data,
             preview,
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            styles: styles || docs[index].styles
         }
         saveDocuments(docs)
     }

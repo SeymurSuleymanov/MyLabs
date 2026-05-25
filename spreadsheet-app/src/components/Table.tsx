@@ -3,9 +3,9 @@ import "./Table.css";
 import { updateDocument } from './storage';
 import ExportImport from './ExportImport'
 import { useAppDispatch, useAppSelector } from '../store'
-import { setTable, updateCell, setSelectedCell, undo, redo, setSaveStatus } from '../store'
+import { setTable, updateCell, setSelectedCell, undo, redo, setSaveStatus, setCellStyle } from '../store'
 import { useNavigate } from 'react-router-dom'
-
+import Toolbar from "./Toolbar";
 type CellValue = string | number | boolean;
 
 interface Cell {
@@ -209,6 +209,7 @@ function Table({ documentId }) {
     const [menuCell, setMenuCell] = useState(null);
     const [colWidths, setColWidths] = useState(Array(table[0]?.length || 100).fill(80));
     const [rowHeights, setRowHeights] = useState(Array(table?.length || 26).fill(40));
+    const styles = useAppSelector(state => state.spreadsheet.styles)
 
     useEffect(() => {
         const handleClick = () => setMenuPosition(null);
@@ -216,6 +217,30 @@ function Table({ documentId }) {
         return () => document.removeEventListener('click', handleClick);
     }, []);
 
+    // Ctrl+B, Ctrl+I, Ctrl+U для форматирования
+    useEffect(() => {
+        const handleFormat = (e) => {
+            if (!selectedCell) return
+            
+            if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                e.preventDefault()
+                const currentStyle = styles[selectedCell] || {}
+                dispatch(setCellStyle({ key: selectedCell, style: { bold: !currentStyle.bold } }))
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+                e.preventDefault()
+                const currentStyle = styles[selectedCell] || {}
+                dispatch(setCellStyle({ key: selectedCell, style: { italic: !currentStyle.italic } }))
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+                e.preventDefault()
+                const currentStyle = styles[selectedCell] || {}
+                dispatch(setCellStyle({ key: selectedCell, style: { underline: !currentStyle.underline } }))
+            }
+        }
+        window.addEventListener('keydown', handleFormat)
+        return () => window.removeEventListener('keydown', handleFormat)
+    }, [selectedCell, styles, dispatch])
     //предупреждение при несохранении
     useEffect(() => {
         const handleBeforeUnload = (e) => {
@@ -246,7 +271,7 @@ function Table({ documentId }) {
         const timer = setTimeout(() => {
             dispatch(setSaveStatus('saving'))
             try {
-                updateDocument(documentId, table)
+                updateDocument(documentId, table, styles)
                 dispatch(setSaveStatus('saved'))
             } catch {
                 dispatch(setSaveStatus('error'))
@@ -260,7 +285,7 @@ function Table({ documentId }) {
         const handleSave = (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault()
-                updateDocument(documentId, table)
+                updateDocument(documentId, table, styles)
                 dispatch(setSaveStatus('saved'))
             }
         }
@@ -377,6 +402,7 @@ return (
         </div>
     </div>
 
+        <Toolbar selectedCell={selectedCell} />
         <input 
             value={selectedCell ? table[selectedCell.split("-")[0]]?.[selectedCell.split("-")[1]]?.raw : ""}
             onChange={(e) => {
@@ -435,8 +461,15 @@ return (
                             
                             return (
                                 <button 
-                                
-                                    style={{ width: colWidths[colIndex] }}
+                                    style={{ 
+                                        width: colWidths[colIndex],
+                                        fontWeight: styles[`${rowIndex}-${colIndex}`]?.bold ? 'bold' : 'normal',
+                                        fontStyle: styles[`${rowIndex}-${colIndex}`]?.italic ? 'italic' : 'normal',
+                                        textDecoration: styles[`${rowIndex}-${colIndex}`]?.underline ? 'underline' : 'none',
+                                        color: styles[`${rowIndex}-${colIndex}`]?.color || '#000000',
+                                        backgroundColor: styles[`${rowIndex}-${colIndex}`]?.bgColor || undefined,
+                                        textAlign: styles[`${rowIndex}-${colIndex}`]?.align || 'left'
+                                    }}
                                     onContextMenu={(e) => {
                                         e.preventDefault();
                                         setMenuCell({ row: rowIndex, col: colIndex });

@@ -65,8 +65,8 @@ const spreadsheetSlice = createSlice({
         setCellStyles: (state, action) => {
             const { keys, style } = action.payload
             keys.forEach(key => {
-                state.styles[key] = { ...state.styles[key], ...style } 
-            }
+                state.styles[key] = { ...state.styles[key], ...style }
+            })
         },
         undo: (state) => {
             if (state.history.past.length === 0) return
